@@ -89,11 +89,9 @@ func (c *CertificateStore) GetBestCertificate(clientHello *tls.ClientHelloInfo) 
 
 	matchedCerts := map[string]*tls.Certificate{}
 	if c.DynamicCerts != nil && c.DynamicCerts.Get() != nil {
-		for domains, cert := range c.DynamicCerts.Get().(map[string]*tls.Certificate) {
-			for _, certDomain := range strings.Split(domains, ",") {
-				if MatchDomain(domainToCheck, certDomain) {
-					matchedCerts[certDomain] = cert
-				}
+		for certDomain, cert := range c.DynamicCerts.Get().(map[string]*tls.Certificate) {
+			if MatchDomain(domainToCheck, certDomain) {
+				matchedCerts[certDomain] = cert
 			}
 		}
 	}
