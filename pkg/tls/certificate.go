@@ -9,6 +9,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/traefik/traefik/v2/pkg/log"
 	"github.com/traefik/traefik/v2/pkg/tls/generate"
@@ -185,27 +186,39 @@ func (c *Certificate) AppendCertificate(certs map[string]map[string]*tls.Certifi
 			}
 		}
 	}
-	certKey := strings.Join(SANs, ",")
 
-	certExists := false
-	if certs[ep] == nil {
-		certs[ep] = make(map[string]*tls.Certificate)
-	} else {
-		for domains := range certs[ep] {
-			if domains == certKey {
-				certExists = true
-				break
-			}
+	// verify cert
+	intermediatePool := x509.NewCertPool()
+	for i := 1; i < len(tlsCert.Certificate); i++ {
+		certDer, err := x509.ParseCertificate(tlsCert.Certificate[i])
+		if err != nil {
+			return fmt.Errorf("unable to parse certificate : %w", err)
+		}
+		intermediatePool.AddCert(certDer)
+	}
+	_, err = parsedCert.Verify(x509.VerifyOptions{
+		Intermediates: intermediatePool,
+		CurrentTime:   time.Now(),
+	})
+
+	st, exist := certs[ep]
+	if !exist {
+		st = make(map[string]*tls.Certificate)
+		certs[ep] = st
+	}
+
+	for _, domain := range SANs {
+		if _, exist = st[domain]; !exist {
+			log.Debugf("Adding certificate to %s for domain: %s issuer: %s", ep, domain, parsedCert.Issuer)
+			st[domain] = &tlsCert
+		} else if err != nil {
+			log.Debugf("Skipping addition of certificate for domain %q, to EntryPoint %s, as it already exists for this Entrypoint.", domain, ep)
+		} else {
+			log.Debugf("Replace certificate to %s for domain: %s issuer: %s", ep, domain, parsedCert.Issuer)
+			st[domain] = &tlsCert
 		}
 	}
-	if certExists {
-		log.Debugf("Skipping addition of certificate for domain(s) %q, to EntryPoint %s, as it already exists for this Entrypoint.", certKey, ep)
-	} else {
-		log.Debugf("Adding certificate for domain(s) %s", certKey)
-		certs[ep][certKey] = &tlsCert
-	}
-
-	return err
+	return nil
 }
 
 // GetCertificate retrieves Certificate as tls.Certificate.
