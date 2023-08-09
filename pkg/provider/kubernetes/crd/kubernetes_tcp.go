@@ -12,6 +12,7 @@ import (
 	"github.com/traefik/traefik/v2/pkg/log"
 	"github.com/traefik/traefik/v2/pkg/provider"
 	"github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefik/v1alpha1"
+	"github.com/traefik/traefik/v2/pkg/rules"
 	"github.com/traefik/traefik/v2/pkg/tls"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -278,13 +279,23 @@ func getTLSTCP(ctx context.Context, ingressRoute *v1alpha1.IngressRouteTCP, k8sC
 	}
 
 	configKey := ingressRoute.Namespace + "/" + ingressRoute.Spec.TLS.SecretName
-	if _, tlsExists := tlsConfigs[configKey]; !tlsExists {
-		tlsConf, err := getTLS(k8sClient, ingressRoute.Spec.TLS.SecretName, ingressRoute.Namespace)
+	tlsConf, tlsExists := tlsConfigs[configKey]
+	if !tlsExists {
+		var err error
+		tlsConf, err = getTLS(k8sClient, ingressRoute.Spec.TLS.SecretName, ingressRoute.Namespace)
 		if err != nil {
 			return err
 		}
-
 		tlsConfigs[configKey] = tlsConf
+	}
+
+	for _, route := range ingressRoute.Spec.Routes {
+		domains, err := rules.ParseHostSNI(route.Match)
+		if err != nil {
+			log.FromContext(ctx).Errorf("Error parsing domains in tls TCP: %v", err)
+			continue
+		}
+		tlsConf.SANs = append(tlsConf.SANs, domains...)
 	}
 
 	return nil
