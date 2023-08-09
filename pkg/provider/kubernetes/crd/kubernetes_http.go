@@ -10,6 +10,7 @@ import (
 
 	"github.com/traefik/traefik/v2/pkg/config/dynamic"
 	"github.com/traefik/traefik/v2/pkg/log"
+	httpmuxer "github.com/traefik/traefik/v2/pkg/muxer/http"
 	"github.com/traefik/traefik/v2/pkg/provider"
 	"github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefik/v1alpha1"
 	"github.com/traefik/traefik/v2/pkg/tls"
@@ -510,6 +511,15 @@ func getTLSHTTP(ctx context.Context, ingressRoute *v1alpha1.IngressRoute, k8sCli
 		tlsConf, err := getTLS(k8sClient, ingressRoute.Spec.TLS.SecretName, ingressRoute.Namespace)
 		if err != nil {
 			return err
+		}
+
+		for _, route := range ingressRoute.Spec.Routes {
+			domains, err := httpmuxer.ParseDomains(route.Match)
+			if err != nil {
+				log.FromContext(ctx).Errorf("Error parsing domains in tls HTTP: %v", err)
+				continue
+			}
+			tlsConf.SANs = append(tlsConf.SANs, domains...)
 		}
 
 		tlsConfigs[configKey] = tlsConf

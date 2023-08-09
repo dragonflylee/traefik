@@ -52,6 +52,7 @@ var (
 type Certificate struct {
 	CertFile FileOrContent `json:"certFile,omitempty" toml:"certFile,omitempty" yaml:"certFile,omitempty"`
 	KeyFile  FileOrContent `json:"keyFile,omitempty" toml:"keyFile,omitempty" yaml:"keyFile,omitempty" loggable:"false"`
+	SANs     []string      `json:"sans,omitempty" yaml:"sans,omitempty"`
 }
 
 // Certificates defines traefik certificates type
@@ -165,28 +166,32 @@ func (c *Certificate) AppendCertificate(certs map[string]map[string]*tls.Certifi
 		return fmt.Errorf("unable to generate TLS certificate : %w", err)
 	}
 
-	parsedCert, _ := x509.ParseCertificate(tlsCert.Certificate[0])
-
-	var SANs []string
-	if parsedCert.Subject.CommonName != "" {
-		SANs = append(SANs, strings.ToLower(parsedCert.Subject.CommonName))
+	parsedCert, err := x509.ParseCertificate(tlsCert.Certificate[0])
+	if err != nil {
+		return fmt.Errorf("unable to parse certificate : %w", err)
 	}
-	if parsedCert.DNSNames != nil {
-		sort.Strings(parsedCert.DNSNames)
-		for _, dnsName := range parsedCert.DNSNames {
-			if dnsName != parsedCert.Subject.CommonName {
-				SANs = append(SANs, strings.ToLower(dnsName))
+
+	var SANs = c.SANs
+	if len(SANs) == 0 {
+		if parsedCert.Subject.CommonName != "" {
+			SANs = append(SANs, strings.ToLower(parsedCert.Subject.CommonName))
+		}
+		if parsedCert.DNSNames != nil {
+			sort.Strings(parsedCert.DNSNames)
+			for _, dnsName := range parsedCert.DNSNames {
+				if dnsName != parsedCert.Subject.CommonName {
+					SANs = append(SANs, strings.ToLower(dnsName))
+				}
+			}
+		}
+		if parsedCert.IPAddresses != nil {
+			for _, ip := range parsedCert.IPAddresses {
+				if ip.String() != parsedCert.Subject.CommonName {
+					SANs = append(SANs, strings.ToLower(ip.String()))
+				}
 			}
 		}
 	}
-	if parsedCert.IPAddresses != nil {
-		for _, ip := range parsedCert.IPAddresses {
-			if ip.String() != parsedCert.Subject.CommonName {
-				SANs = append(SANs, strings.ToLower(ip.String()))
-			}
-		}
-	}
-
 	// verify cert
 	intermediatePool := x509.NewCertPool()
 	for i := 1; i < len(tlsCert.Certificate); i++ {
