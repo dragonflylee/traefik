@@ -562,6 +562,7 @@ func TestLoadIngressRouteTCPs(t *testing.T) {
 							Certificate: tls.Certificate{
 								CertFile: tls.FileOrContent("-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----"),
 								KeyFile:  tls.FileOrContent("-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----"),
+								SANs:     []string{"foo.com"},
 							},
 						},
 					},
@@ -1047,6 +1048,7 @@ func TestLoadIngressRouteTCPs(t *testing.T) {
 							DefaultCertificate: &tls.Certificate{
 								CertFile: tls.FileOrContent("-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----"),
 								KeyFile:  tls.FileOrContent("-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----"),
+								SANs:     []string{"foo.com"},
 							},
 						},
 					},
@@ -2685,6 +2687,7 @@ func TestLoadIngressRoutes(t *testing.T) {
 							Certificate: tls.Certificate{
 								CertFile: tls.FileOrContent("-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----"),
 								KeyFile:  tls.FileOrContent("-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----"),
+								SANs:     []string{"foo.com"},
 							},
 						},
 					},
@@ -3434,6 +3437,7 @@ func TestLoadIngressRoutes(t *testing.T) {
 							DefaultCertificate: &tls.Certificate{
 								CertFile: tls.FileOrContent("-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----"),
 								KeyFile:  tls.FileOrContent("-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----"),
+								SANs:     []string{"foo.com"},
 							},
 						},
 					},
@@ -3487,6 +3491,7 @@ func TestLoadIngressRoutes(t *testing.T) {
 							Certificate: tls.Certificate{
 								CertFile: tls.FileOrContent("-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----"),
 								KeyFile:  tls.FileOrContent("-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----"),
+								SANs:     []string{"foo.com"},
 							},
 							Stores: []string{"default"},
 						},
