@@ -507,22 +507,24 @@ func getTLSHTTP(ctx context.Context, ingressRoute *v1alpha1.IngressRoute, k8sCli
 	}
 
 	configKey := ingressRoute.Namespace + "/" + ingressRoute.Spec.TLS.SecretName
-	if _, tlsExists := tlsConfigs[configKey]; !tlsExists {
-		tlsConf, err := getTLS(k8sClient, ingressRoute.Spec.TLS.SecretName, ingressRoute.Namespace)
+	tlsConf, tlsExists := tlsConfigs[configKey]
+	if !tlsExists {
+		var err error
+		tlsConf, err = getTLS(k8sClient, ingressRoute.Spec.TLS.SecretName, ingressRoute.Namespace)
 		if err != nil {
 			return err
 		}
 
-		for _, route := range ingressRoute.Spec.Routes {
-			domains, err := httpmuxer.ParseDomains(route.Match)
-			if err != nil {
-				log.FromContext(ctx).Errorf("Error parsing domains in tls HTTP: %v", err)
-				continue
-			}
-			tlsConf.SANs = append(tlsConf.SANs, domains...)
-		}
-
 		tlsConfigs[configKey] = tlsConf
+	}
+
+	for _, route := range ingressRoute.Spec.Routes {
+		domains, err := httpmuxer.ParseDomains(route.Match)
+		if err != nil {
+			log.FromContext(ctx).Errorf("Error parsing domains in tls HTTP: %v", err)
+			continue
+		}
+		tlsConf.SANs = append(tlsConf.SANs, domains...)
 	}
 
 	return nil

@@ -214,12 +214,12 @@ func (c *Certificate) AppendCertificate(certs map[string]map[string]*tls.Certifi
 
 	for _, domain := range SANs {
 		if _, exist = st[domain]; !exist {
-			log.Debugf("Adding certificate to %s for domain: %s issuer: %s", ep, domain, parsedCert.Issuer)
+			log.Debugf("Adding certificate to `%s` for domain: %s issuer: %s", ep, domain, parsedCert.Issuer)
 			st[domain] = &tlsCert
 		} else if err != nil {
-			log.Debugf("Skipping addition of certificate for domain %q, to EntryPoint %s, as it already exists for this Entrypoint.", domain, ep)
+			log.Debugf("Skipping addition of certificate for domain %q, to EntryPoint `%s`, as it already exists for this Entrypoint.", domain, ep)
 		} else {
-			log.Debugf("Replace certificate to %s for domain: %s issuer: %s", ep, domain, parsedCert.Issuer)
+			log.Debugf("Replace certificate to `%s` for domain: %s issuer: %s", ep, domain, parsedCert.Issuer)
 			st[domain] = &tlsCert
 		}
 	}
